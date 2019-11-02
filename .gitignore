@@ -2,3 +2,4 @@
 build
 dist
 pharmd.egg-info
+pharmd/__pycache__/
