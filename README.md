@@ -77,8 +77,13 @@ get_scores -i screen/ -o cca_scores.txt -s cca -d compounds.db
 ## Documentation
 All utilities have `-h` option to get help pages with descriptions of all available arguments. 
 
+
 ## Citation
-paper was submitted
+Virtual Screening Using Pharmacophore Models Retrieved from Molecular Dynamic Simulations
+Pavel Polishchuk, Alina Kutlushina, Dayana Bashirova, Olena Mokshyna, Timur Madzhidov
+Int. J. Mol. Sci. 2019, 20(23), 5834
+https://doi.org/10.3390/ijms20235834
+
 
 ## License
 BSD-3 clause
