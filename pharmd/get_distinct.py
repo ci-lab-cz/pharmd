@@ -32,6 +32,9 @@ def entry_point():
     parser = create_parser()
     args = parser.parse_args()
 
+    if args.output_hashes is None:
+        args.output_hashes = os.path.join(os.path.dirname(args.input), 'hashes.txt')
+
     files = [f for f in os.listdir(args.input) if f.endswith(".xyz")]
 
     data = []
