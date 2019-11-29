@@ -8,15 +8,18 @@ import pybel
 import mdtraj as md
 from collections import defaultdict
 from plip.modules.preparation import PDBComplex
-#from rdkit import Chem
+# from plip.modules import config
+
+# config.NOFIX = True
+# from rdkit import Chem
 
 
 def create_parser():
     parser = argparse.ArgumentParser(description='Extract pharmacophore models from an MD trajectory of a '
                                                  'protein-ligand complex.')
-    parser.add_argument('-i', '--input', metavar='input.xtc', required=True, type=str,
+    parser.add_argument('-i', '--input', metavar='input.xtc', required=False, type=str,
                         help='Input file with MD trajectory. Formats are the same as MDTraj supports.')
-    parser.add_argument('-t', '--topology', metavar='input.pdb', required=True, type=str,
+    parser.add_argument('-t', '--topology', metavar='input.pdb', required=False, type=str,
                         help='PDB file with topology')
     parser.add_argument('-f', '--first', metavar='INTEGER', required=False, type=int,
                         help='Staring frame number.')
@@ -24,10 +27,15 @@ def create_parser():
                         help='Last frame number.')
     parser.add_argument('-s', '--stride', metavar='INTEGER', required=False, type=int,
                         help='Step using to extract frames.')
+    parser.add_argument('-o', '--output', metavar='output.pdb', required=False,
+                        help='output PDB file with all extracted frames. Solvent will be omitted.')
+    parser.add_argument('-p', '--pdb_input', metavar='frames.pdb', required=False, type=str, default=None,
+                        help='PDB file with multiple frames of a trajectory - an alternative input to MD trajectory. '
+                             'Output pharmacophore models will be stored in the same directory; '
+                             'output argument would be ignored as all other arguments related to extraction of frames '
+                             'from MD trajectory..')
     parser.add_argument('-g', '--lig_id', metavar='STRING', required=True, type=str,
                         help='three-letter ligand ID')
-    parser.add_argument('-o', '--output', metavar='output.pdb', required=True,
-                        help='output PDB file with all extracted frames. Solvent will be omitted.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='print progress to STDERR.')
     return parser
@@ -62,7 +70,7 @@ def load_complex_from_string(pdb_string, lig_id):
     complex.load_pdb(pdb_string, as_string=True)
     lig_pdb_string = []
     for line in pdb_string.split('\n'):
-        if line[17:20] == lig_id:
+        if line[17:20] == lig_id or line[:6] == 'CONECT':
             lig_pdb_string.append(line)
     lig_pdb_string = '\n'.join(lig_pdb_string)
     lig = pybel.readstring('pdb', lig_pdb_string)  # openbabel molecule
@@ -358,6 +366,7 @@ def writeInteractions(fname, interactions):
 
 
 def read_pdb_models(fname):
+    n_returns = 0
     with open(fname) as f:
         lines = []
         for line in f:
@@ -365,7 +374,10 @@ def read_pdb_models(fname):
                 lines.append(line)
             if line.startswith("ENDMDL"):
                 yield ''.join(lines)
+                n_returns += 1
                 lines = []
+        if n_returns == 0:
+            yield ''.join(lines)
 
 
 def get_lig_index(complex, lig_id):
@@ -386,16 +398,20 @@ def entry_point():
     args = parser.parse_args()
     args.lig_id = args.lig_id.upper()
 
-    traj = md.load(args.input, top=args.topology)
-    traj.remove_solvent(inplace=True)
-    traj[args.first:args.last:args.stride].save_pdb(args.output)
+    if args.pdb_input is None:
+        traj = md.load(args.input, top=args.topology)
+        traj.remove_solvent(inplace=True)
+        traj[args.first:args.last:args.stride].save_pdb(args.output)
+        pdb_input = args.output
+    else:
+        pdb_input = args.pdb_input
 
-    for i, pdb_string in enumerate(read_pdb_models(args.output)):
+    for i, pdb_string in enumerate(read_pdb_models(pdb_input)):
         complex, lig = load_complex_from_string(pdb_string, args.lig_id)
         lig_index = get_lig_index(complex, args.lig_id)
         interactions = plip_analysis(complex, lig_index)
         interactions = check_interactions(interactions, complex, lig, lig_index)
-        writeInteractions(os.path.splitext(args.output)[0] + f'{i:05d}.xyz', interactions)
+        writeInteractions(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz', interactions)
 
 
 if __name__ == '__main__':
