@@ -7,6 +7,8 @@ import numpy
 import pybel
 import mdtraj as md
 from collections import defaultdict
+from multiprocessing import Pool, cpu_count
+from functools import partial
 from plip.modules.preparation import PDBComplex
 # from plip.modules import config
 
@@ -36,6 +38,8 @@ def create_parser():
                              'from MD trajectory..')
     parser.add_argument('-g', '--lig_id', metavar='STRING', required=True, type=str,
                         help='three-letter ligand ID')
+    parser.add_argument('-c', '--ncpu', metavar='INTEGER', required=False, type=int, default=1,
+                        help='number of CPU to generate pharmacophores. Default: 1.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='print progress to STDERR.')
     return parser
@@ -388,6 +392,14 @@ def get_lig_index(complex, lig_id):
     return index
 
 
+def get_interactions(pdb_string, lig_id):
+    complex, lig = load_complex_from_string(pdb_string, lig_id)
+    lig_index = get_lig_index(complex, lig_id)
+    interactions = plip_analysis(complex, lig_index)
+    interactions = check_interactions(interactions, complex, lig, lig_index)
+    return interactions
+
+
 def entry_point():
 
     global dict_smarts
@@ -398,6 +410,11 @@ def entry_point():
     args = parser.parse_args()
     args.lig_id = args.lig_id.upper()
 
+    if args.ncpu > 1:
+        pool = Pool(max(min(args.ncpu, cpu_count()), 1))
+    else:
+        pool = None
+
     if args.pdb_input is None:
         traj = md.load(args.input, top=args.topology)
         traj.remove_solvent(inplace=True)
@@ -406,12 +423,13 @@ def entry_point():
     else:
         pdb_input = args.pdb_input
 
-    for i, pdb_string in enumerate(read_pdb_models(pdb_input)):
-        complex, lig = load_complex_from_string(pdb_string, args.lig_id)
-        lig_index = get_lig_index(complex, args.lig_id)
-        interactions = plip_analysis(complex, lig_index)
-        interactions = check_interactions(interactions, complex, lig, lig_index)
-        writeInteractions(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz', interactions)
+    if pool:
+        for i, interactions in enumerate(pool.imap(partial(get_interactions, lig_id=args.lig_id), read_pdb_models(pdb_input))):
+            writeInteractions(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz', interactions)
+    else:
+        for i, pdb_string in enumerate(read_pdb_models(pdb_input)):
+            interactions = get_interactions(pdb_string, args.lig_id)
+            writeInteractions(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz', interactions)
 
 
 if __name__ == '__main__':
