@@ -3,6 +3,7 @@
 import argparse
 import itertools
 import os
+import sys
 import numpy
 import pybel
 import mdtraj as md
@@ -416,6 +417,8 @@ def entry_point():
         pool = None
 
     if args.pdb_input is None:
+        if args.verbose:
+            sys.stderr.write('input trajectory is converting to pdb format\n')
         traj = md.load(args.input, top=args.topology)
         traj.remove_solvent(inplace=True)
         traj[args.first:args.last:args.stride].save_pdb(args.output)
@@ -426,10 +429,16 @@ def entry_point():
     if pool:
         for i, interactions in enumerate(pool.imap(partial(get_interactions, lig_id=args.lig_id), read_pdb_models(pdb_input))):
             writeInteractions(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz', interactions)
+            if args.verbose:
+                sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
     else:
         for i, pdb_string in enumerate(read_pdb_models(pdb_input)):
             interactions = get_interactions(pdb_string, args.lig_id)
             writeInteractions(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz', interactions)
+            if args.verbose:
+                sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
+    if args.verbose:
+        sys.stderr.write('\n')
 
 
 if __name__ == '__main__':
