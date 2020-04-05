@@ -55,7 +55,7 @@ smarts = load_smarts(load_metal_chelators=True)
 
 
 def get_pharmacophore(pdb, ligand, *, radius_multiplier=1.35):
-    with PDBRead(StringIO(pdb), radius_multiplier=radius_multiplier, ignore=True) as f:
+    with PDBRead(StringIO(pdb), radius_multiplier=radius_multiplier, ignore=True, element_name_priority=True) as f:
         cmol = next(f)
 
     cmol.thiele()  # aromatize
