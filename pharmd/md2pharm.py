@@ -54,9 +54,49 @@ reverse_legend = {Hydrophobic: 'H', PiCation: 'a', PiStack: 'a', CationPi: 'P', 
 smarts = load_smarts(load_metal_chelators=True)
 
 
-def get_pharmacophore(pdb, ligand, *, radius_multiplier=1.35):
+def fix_disulphide(mol, dist=4):
+    xyz = mol._conformers[0]
+    bonds = mol._bonds
+    neighbors = mol._neighbors
+    charges = mol._charges
+
+    sulph = []
+    for n, a in mol.atoms():
+        if a.atomic_number == 16 and charges[n] == -1 and neighbors[n] == 1:
+            sulph.append(n)
+
+    found = 0
+    while len(sulph) > 1:
+        n = sulph.pop()
+        nc = xyz[n]
+        try:
+            m = next(m for m in sulph if distance(xyz[m], nc) < dist)
+        except StopIteration:
+            continue
+
+        sulph.remove(m)
+        bonds[n][m] = bonds[m][n] = Bond(1)
+        neighbors[n] = neighbors[m] = 2
+        charges[n] = charges[m] = 0
+        found += 2
+
+    if found:
+        # fix C[S+]C
+        for n, a in mol.atoms():
+            if a.atomic_number == 16 and charges[n] == 1 and len(bonds[n]) == 2:
+                charges[n] = 0
+                found -= 1
+
+        return not found
+    return True
+
+
+def get_pharmacophore(pdb, ligand, *, radius_multiplier=1.35, fix_distance=4):
     with PDBRead(StringIO(pdb), radius_multiplier=radius_multiplier, ignore=True, element_name_priority=True) as f:
         cmol = next(f)
+
+    if not fix_disulphide(cmol, fix_distance):
+        print('Charge not balanced')
 
     cmol.thiele()  # aromatize
 
@@ -81,6 +121,7 @@ def get_pharmacophore(pdb, ligand, *, radius_multiplier=1.35):
             lig.__dict__[legend[t]] = tuple(tuple(mapping[x] for x in x) for x in ids)
         else:
             lig.__dict__[legend[t]] = tuple(mapping[x] for x in ids for x in x)
+    lig.__dict__['halogen_acceptor_centers'] = lig.__dict__['halogen_donor_centers'] = ()
 
     # mapping of atoms into groups of ff
     features_mapping = {}
@@ -128,6 +169,7 @@ def read_pdb_models(fname):
             if not line.startswith("MODEL") and not line.startswith("ENDMDL"):
                 lines.append(line)
             if line.startswith("ENDMDL"):
+                lines.append(line)
                 yield ''.join(lines)
                 n_returns += 1
                 lines = []
@@ -169,7 +211,7 @@ def entry_point():
                 sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
     else:
         for i, pdb_string in enumerate(read_pdb_models(pdb_input)):
-            interactions = get_pharmacophore(pdb_string, args.lig_id)
+            p = get_pharmacophore(pdb_string, args.lig_id)
             p.save_to_xyz(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz')
             if args.verbose:
                 sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
