@@ -15,7 +15,10 @@ from collections import defaultdict
 from CGRtools import PDBRead, to_rdkit_molecule
 from CGRtools.algorithms.pharmacophore import (PiStack, PiCation, MetalComplex, Hydrophobic, CationPi, Salts,
                                                HydrogenAcceptor, HydrogenDonor, HalogenDonor, HalogenAcceptor, distance)
-from CGRtools.containers.bonds import Bond
+from CGRtools.files import XYZrw
+from CGRtools.files.XYZrw import get_possible_bonds
+from itertools import combinations
+from math import sqrt
 
 
 def create_parser():
@@ -55,49 +58,30 @@ reverse_legend = {Hydrophobic: 'H', PiCation: 'a', PiStack: 'a', CationPi: 'P', 
 smarts = load_smarts(load_metal_chelators=True)
 
 
-def fix_disulphide(mol, dist=4):
-    xyz = mol._conformers[0]
-    bonds = mol._bonds
-    neighbors = mol._neighbors
-    charges = mol._charges
+def fix_disulphide(dist=4):
+    def w(atoms, conformer, multiplier):
+        possible_bonds = get_possible_bonds(atoms, conformer, multiplier)
+        sulf = []
+        for n, a in atoms.items():
+            if a.atomic_number == 16:
+                sulf.append(n)
 
-    sulph = []
-    for n, a in mol.atoms():
-        if a.atomic_number == 16 and charges[n] == -1 and neighbors[n] == 1:
-            sulph.append(n)
-
-    found = 0
-    while len(sulph) > 1:
-        n = sulph.pop()
-        nc = xyz[n]
-        try:
-            m = next(m for m in sulph if distance(xyz[m], nc) < dist)
-        except StopIteration:
-            continue
-
-        sulph.remove(m)
-        bonds[n][m] = bonds[m][n] = Bond(1)
-        neighbors[n] = neighbors[m] = 2
-        charges[n] = charges[m] = 0
-        found += 2
-
-    if found:
-        # fix C[S+]C
-        for n, a in mol.atoms():
-            if a.atomic_number == 16 and charges[n] == 1 and len(bonds[n]) == 2:
-                charges[n] = 0
-                found -= 1
-
-        return not found
-    return True
+        for n, m in combinations(sulf, 2):
+            nx, ny, nz = conformer[n]
+            mx, my, mz = conformer[m]
+            d = sqrt((nx - mx) ** 2 + (ny - my) ** 2 + (nz - mz) ** 2)
+            if d <= dist:
+                possible_bonds[n][m] = possible_bonds[m][n] = d
+        return possible_bonds
+    XYZrw.get_possible_bonds = w
 
 
 def get_pharmacophore(pdb, ligand, *, radius_multiplier=1.35, fix_distance=4):
     with PDBRead(StringIO(pdb), radius_multiplier=radius_multiplier, ignore=True, element_name_priority=True) as f:
         cmol = next(f)
 
-    if not fix_disulphide(cmol, fix_distance):
-        print('Charge not balanced')
+    if any(a.atomic_number==16 and a.charge for _, a in cmol.atoms()):
+        print('FUUUU')
 
     cmol.thiele()  # aromatize
 
@@ -183,6 +167,9 @@ def entry_point():
     parser = create_parser()
     args = parser.parse_args()
     args.lig_id = args.lig_id.upper()
+
+    # call this function ONCE!!!
+    fix_disulphide(dist=10)  # before forks!
 
     if args.output:
         os.makedirs(os.path.dirname(args.output), exist_ok=True)
