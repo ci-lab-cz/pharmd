@@ -15,6 +15,7 @@ from collections import defaultdict
 from CGRtools import PDBRead, to_rdkit_molecule
 from CGRtools.algorithms.pharmacophore import (PiStack, PiCation, MetalComplex, Hydrophobic, CationPi, Salts,
                                                HydrogenAcceptor, HydrogenDonor, HalogenDonor, HalogenAcceptor, distance)
+from CGRtools.containers.bonds import Bond
 
 
 def create_parser():
