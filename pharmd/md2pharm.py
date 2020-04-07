@@ -76,12 +76,10 @@ def fix_disulphide(dist=4):
     XYZrw.get_possible_bonds = w
 
 
-def get_pharmacophore(pdb, ligand, *, radius_multiplier=1.35, fix_distance=4):
-    with PDBRead(StringIO(pdb), radius_multiplier=radius_multiplier, ignore=True, element_name_priority=True) as f:
+def get_pharmacophores(pdb, ligand, *, radius_multiplier=1.4):
+    with PDBRead(pdb, radius_multiplier=radius_multiplier, ignore=True, element_name_priority=True,
+                 parse_as_single=True) as f:
         cmol = next(f)
-
-    if any(a.atomic_number==16 and a.charge for _, a in cmol.atoms()):
-        print('FUUUU')
 
     cmol.thiele()  # aromatize
 
@@ -119,31 +117,34 @@ def get_pharmacophore(pdb, ligand, *, radius_multiplier=1.35, fix_distance=4):
                     tmp[y].append(x)
 
     # find contacts
-    found_contacts = lig.find_contacts(prt)
+    out = []
+    for i in range(len(lig._conformers)):
+        found_contacts = lig.find_contacts(prt, i, i)
 
-    # extract ligand atoms and groups
-    contacts = {'a': set(), 'D': set(), 'A': set(), 'P': set(), 'N': set(), 'H': set(), 'M': set(), None: set()}
-    for c in found_contacts:
-        if isinstance(c, Salts):
-            if c.source in lig.positive_charged_centers:
-                contacts['P'].add(c.source)
+        # extract ligand atoms and groups
+        contacts = {'a': set(), 'D': set(), 'A': set(), 'P': set(), 'N': set(), 'H': set(), 'M': set(), None: set()}
+        for c in found_contacts:
+            if isinstance(c, Salts):
+                if c.source in lig.positive_charged_centers:
+                    contacts['P'].add(c.source)
+                else:
+                    contacts['N'].add(c.source)
             else:
-                contacts['N'].add(c.source)
-        else:
-            contacts[reverse_legend[type(c)]].add(c.source)
+                contacts[reverse_legend[type(c)]].add(c.source)
 
-    del contacts[None]
-    for k in list(contacts):
-        if k != 'a':
-            contacts[k] = tuple({x for x in contacts[k] for x in features_mapping[k][x]})
-        else:
-            contacts[k] = tuple(contacts[k])
+        del contacts[None]
+        for k in list(contacts):
+            if k != 'a':
+                contacts[k] = tuple({x for x in contacts[k] for x in features_mapping[k][x]})
+            else:
+                contacts[k] = tuple(contacts[k])
 
-    rdkit_contacts = {k: tuple(tuple(reverse_mapping[x] for x in x) for x in v) for k, v in contacts.items()}
+        rdkit_contacts = {k: tuple(tuple(reverse_mapping[x] for x in x) for x in v) for k, v in contacts.items()}
 
-    p = Pharmacophore()
-    p.load_from_atom_ids(rdkit_lig, rdkit_contacts, confId=1)
-    return p
+        p = Pharmacophore()
+        p.load_from_atom_ids(rdkit_lig, rdkit_contacts, confId=1)
+        out.append(p)
+    return out
 
 
 def read_pdb_models(fname):
@@ -191,20 +192,23 @@ def entry_point():
     else:
         pdb_input = args.pdb_input
 
-    if pool:
-        for i, p in enumerate(pool.imap(partial(get_pharmacophore, ligand=args.lig_id),
-                                                   read_pdb_models(pdb_input))):
-            p.save_to_xyz(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz')
-            if args.verbose:
-                sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
-    else:
-        for i, pdb_string in enumerate(read_pdb_models(pdb_input)):
-            p = get_pharmacophore(pdb_string, args.lig_id)
-            p.save_to_xyz(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz')
-            if args.verbose:
-                sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
-    if args.verbose:
-        sys.stderr.write('\n')
+    for i, p in enumerate(get_pharmacophores(pdb_input, args.lig_id)):
+        p.save_to_xyz(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz')
+
+    # if pool:
+    #     for i, p in enumerate(pool.imap(partial(get_pharmacophore, ligand=args.lig_id),
+    #                                                read_pdb_models(pdb_input))):
+    #         p.save_to_xyz(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz')
+    #         if args.verbose:
+    #             sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
+    # else:
+    #     for i, pdb_string in enumerate(read_pdb_models(pdb_input)):
+    #         p = get_pharmacophore(pdb_string, args.lig_id)
+    #         p.save_to_xyz(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz')
+    #         if args.verbose:
+    #             sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
+    # if args.verbose:
+    #     sys.stderr.write('\n')
 
 
 if __name__ == '__main__':
