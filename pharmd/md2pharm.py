@@ -99,8 +99,9 @@ def get_pharmacophores(pdb, ligand, *, radius_multiplier=1.4):
         for q in queries:
             for m in q.get_mapping(cmol):
                 valid.update(m.values())
-        if any(c and n not in valid for n, c in cmol._charges.items()):
-            raise Exception('invalid charges found')
+        for n, c in cmol._charges.items():
+            if n in sprt and c and n not in valid:
+                raise Exception(f'invalid charges found on atom: {n} [{cmol.augmented_substructure([n], deep=5)}]')
 
         cmol.thiele()  # aromatize
         cgr_lig = cmol.substructure(lig)
@@ -188,7 +189,7 @@ def entry_point():
     args.lig_id = args.lig_id.upper()
 
     # call this function ONCE!!!
-    fix_disulphide(dist=10)  # before forks!
+    fix_disulphide(dist=5)  # before forks!
 
     if args.output:
         os.makedirs(os.path.dirname(args.output), exist_ok=True)
