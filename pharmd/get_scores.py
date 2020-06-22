@@ -4,15 +4,17 @@
 import argparse
 import sys
 import os
-import sqlite3
 import pandas as pd
+from psearch.database import DB
 
 
 def get_conf_count(db_fname):
-    connection = sqlite3.connect(db_fname)
-    cur = connection.cursor()
-    cur.execute("SELECT mol_name, COUNT(mol_name) FROM conformers GROUP BY mol_name")
-    data = cur.fetchall()
+    d = DB(db_fname)
+    mol_names = d.get_mol_names()
+    data = []
+    for mol_name in mol_names:
+        n = d.get_conf_count(mol_name)
+        data.append((mol_name, n))
     data = pd.DataFrame(data, columns=['mol_id', 'total_conf_count'])
     return data
 
