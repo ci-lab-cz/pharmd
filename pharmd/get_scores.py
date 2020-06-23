@@ -54,9 +54,9 @@ def entry_point():
 
         conf_count = get_conf_count(args.db_name)
 
-        df = pd.read_csv(os.path.join(args.input, files[0]), sep='\t', header=None, names=['mol_id', 'conf_id'])
+        df = pd.read_csv(os.path.join(args.input, files[0]), sep='\t', header=None, names=['mol_id', 'stereo_id', 'conf_id'])
         for f in files[1:]:
-            d = pd.read_csv(os.path.join(args.input, f), sep='\t', header=None, names=['mol_id', 'conf_id'])
+            d = pd.read_csv(os.path.join(args.input, f), sep='\t', header=None, names=['mol_id', 'stereo_id', 'conf_id'])
             df = df.append(d, ignore_index=True)
             df.drop_duplicates(inplace=True)
         df = df.groupby('mol_id').agg('count').reset_index()
@@ -66,13 +66,11 @@ def entry_point():
 
     elif args.score == 'cha':
 
-        df = pd.read_csv(os.path.join(args.input, files[0]), sep='\t', header=None, names=['mol_id', 'conf_id'], usecols=['mol_id'])
+        df = pd.read_csv(os.path.join(args.input, files[0]), sep='\t', header=None, names=['mol_id', 'stereo_id', 'conf_id'], usecols=['mol_id'])
         df.drop_duplicates(inplace=True)
-        # df['hit_list'] = 0
         for i, f in enumerate(files[1:], 1):
-            d = pd.read_csv(os.path.join(args.input, f), sep='\t', header=None, names=['mol_id', 'conf_id'], usecols=['mol_id'])
+            d = pd.read_csv(os.path.join(args.input, f), sep='\t', header=None, names=['mol_id', 'stereo_id', 'conf_id'], usecols=['mol_id'])
             d.drop_duplicates(inplace=True)
-            # d['hit_list'] = i
             df = df.append(d, ignore_index=True)
         df = df.reset_index().groupby('mol_id').agg('count').reset_index()
         df['cha_score'] = round(df['index'] / len(files), 3)
