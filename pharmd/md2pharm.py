@@ -22,6 +22,9 @@ from math import sqrt
 from pkg_resources import resource_stream
 
 
+PDBRead.MoleculeContainer = PharmaContacts  # set molecule class to extended inherited
+
+
 def create_parser():
     parser = argparse.ArgumentParser(description='Extract pharmacophore models from an MD trajectory of a '
                                                  'protein-ligand complex.')
@@ -85,7 +88,6 @@ def get_pharmacophores(pdb, ligand, *, radius_multiplier=1.4):
     with PDBRead(pdb, radius_multiplier=radius_multiplier, ignore=True, element_name_priority=True,
                  parse_as_single=True) as f:
         cmol = next(f)  # load graph
-        cmol.__class__ = PharmaContacts
 
         lig = [n for n, r in cmol.meta['RESIDUE'].items() if r == ligand]
         prt = [n for n, r in cmol.meta['RESIDUE'].items() if r != ligand]
