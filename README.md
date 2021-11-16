@@ -4,8 +4,7 @@ PharMD is a tool to retrieve pharmacophore models from MD trajectories of protei
 
 ## Dependency
 
-`mdtraj >= 1.9.3`  
-`plip >= 1.4.2`  
+`mdtraj >= 1.9.3`   
 `pmapper >= 0.3.1`  
 `psearch >= 0.0.2`
 
