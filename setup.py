@@ -16,6 +16,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/ci-lab-cz/pharmd.git",
     packages=['pharmd'],
+    package_data={'pharmd': ['queries.sdf']},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: BSD License",
