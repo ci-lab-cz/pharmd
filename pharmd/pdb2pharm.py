@@ -6,18 +6,16 @@ from pharmd.md2pharm import get_pharmacophores
 
 
 def create_parser():
-    parser = argparse.ArgumentParser(description='Extract pharmacophore models from a PDB files of a '
-                                                 'protein-ligand complex.')
+    parser = argparse.ArgumentParser(description='Extract pharmacophore models from a PDB files of '
+                                                 'ligand-protein complex.')
     parser.add_argument('-p', '--pdbs', metavar='FILENAME(S) or DIRNAME(S)', required=True, type=str, nargs='+',
-                        help='PDB file')
+                        help='a PDB file path(-s) or directory path(-s) of ligand-protein complex(-es)')
     parser.add_argument('-g', '--lig_id', metavar='STRING', required=True, type=str,
                         help='three-letter ligand ID')
     parser.add_argument('-o', '--output', metavar='output.pdb', required=False, default=None,
-                        help='output PDB file with all extracted frames. Solvent will be omitted.')
-    parser.add_argument('-c', '--ncpu', metavar='INTEGER', required=False, type=int, default=1,
-                        help='number of CPU to generate pharmacophores. Default: 1.')
-    parser.add_argument('-v', '--verbose', action='store_true', default=False,
-                        help='print progress to STDERR.')
+                        help='a .xyz file(-s) which will store the 3D coordinates and feature IDs of the extracted pharmacophore(-s)')
+    # parser.add_argument('-v', '--verbose', action='store_true', default=False,
+    #                     help='print progress to STDERR.')
     return parser
 
 
