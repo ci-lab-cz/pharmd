@@ -156,6 +156,9 @@ def get_pharmacophores(pdb, ligand, *, radius_multiplier=1.4):
 
             del contacts[None]
             for k in list(contacts):
+                # remove all`M` feature
+                if k == 'M':
+                    continue
                 if k != 'a':
                     contacts[k] = tuple({x for x in contacts[k] for x in features_mapping[k][x]})
                 else:
