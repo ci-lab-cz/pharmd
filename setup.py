@@ -25,7 +25,7 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Chemistry"
     ],
     python_requires='>=3.6',
-    install_requires=['pmapper>=0.3', 'psearch>=0.0.2', 'mdtraj>=1.9.3'],
+    install_requires=['0.3<=pmapper<=0.4.0', 'psearch>=0.0.2', 'mdtraj>=1.9.3'],
     entry_points={'console_scripts':
                       ['get_distinct = pharmd.get_distinct:entry_point',
                        'md2pharm = pharmd.md2pharm:entry_point',
