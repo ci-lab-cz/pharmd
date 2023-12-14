@@ -28,6 +28,7 @@ setuptools.setup(
     entry_points={'console_scripts':
                       ['get_distinct = pharmd.get_distinct:entry_point',
                        'md2pharm = pharmd.md2pharm:entry_point',
+                       'pdb2pharm = pharmd.pdb2pharm:entry_point',
                        'get_scores = pharmd.get_scores:entry_point']},
     include_package_data=True
 )
