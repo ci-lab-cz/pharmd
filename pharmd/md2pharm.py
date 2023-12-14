@@ -108,7 +108,8 @@ def get_pharmacophores(pdb, ligand, *, radius_multiplier=1.4):
         cgr_lig = cmol.substructure(lig)
         cgr_prt = cmol.substructure(prt)
         rdkit_lig = to_rdkit_molecule(cgr_lig)
-        features = Pharmacophore._get_features_atom_ids(rdkit_lig, smarts)
+        p_tmp = Pharmacophore()
+        features = p_tmp._get_features_atom_ids(rdkit_lig, smarts)
 
         # apply pmapper pp to ligand
         mapping = dict(enumerate(cgr_lig))
