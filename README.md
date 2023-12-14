@@ -5,7 +5,6 @@ PharMD is a tool to retrieve pharmacophore models from MD trajectories of protei
 ## Dependency
 
 `mdtraj >= 1.9.3`  
-`plip >= 1.4.2`  
 `pmapper >= 0.3.1`  
 `psearch >= 0.0.2`
 
@@ -84,9 +83,7 @@ Pavel Polishchuk, Alina Kutlushina, Dayana Bashirova, Olena Mokshyna, Timur Madz
 *Int. J. Mol. Sci.* **2019**, 20(23), 5834  
 https://doi.org/10.3390/ijms20235834
 
-
 ## Issues
-Currently there is an issue with installation of dependencies. `plip` requires `openbabel` which causes an error during installation via `pip`. Therefore it is recommended to solve dependencies manually and use `pip install -U --no-deps pharmd` to install `pharmd` ignoring dependencies.
 
 ## License
 BSD-3 clause
