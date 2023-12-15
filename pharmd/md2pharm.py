@@ -47,10 +47,6 @@ def create_parser():
                              'from MD trajectory..')
     parser.add_argument('-g', '--lig_id', metavar='STRING', required=True, type=str,
                         help='three-letter ligand ID')
-    parser.add_argument('-c', '--ncpu', metavar='INTEGER', required=False, type=int, default=1,
-                        help='number of CPU to generate pharmacophores. Default: 1.')
-    parser.add_argument('-v', '--verbose', action='store_true', default=False,
-                        help='print progress to STDERR.')
     return parser
 
 
@@ -201,11 +197,6 @@ def entry_point():
     if args.output:
         os.makedirs(os.path.dirname(args.output), exist_ok=True)
 
-    if args.ncpu > 1:
-        pool = Pool(max(min(args.ncpu, cpu_count()), 1))
-    else:
-        pool = None
-
     non_water = _SOLVENT_TYPES - _WATER_RESIDUES
 
     if args.pdb_input is None:
@@ -221,21 +212,6 @@ def entry_point():
     for i, p in enumerate(get_pharmacophores(pdb_input, args.lig_id)):
         p.save_to_xyz(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz')
         sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
-
-    # if pool:
-    #     for i, p in enumerate(pool.imap(partial(get_pharmacophore, ligand=args.lig_id),
-    #                                                read_pdb_models(pdb_input))):
-    #         p.save_to_xyz(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz')
-    #         if args.verbose:
-    #             sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
-    # else:
-    #     for i, pdb_string in enumerate(read_pdb_models(pdb_input)):
-    #         p = get_pharmacophore(pdb_string, args.lig_id)
-    #         p.save_to_xyz(os.path.splitext(pdb_input)[0] + f'{i:05d}.xyz')
-    #         if args.verbose:
-    #             sys.stderr.write(f'\r{i + 1} pharmacophores were retrieved')
-    # if args.verbose:
-    #     sys.stderr.write('\n')
 
 
 if __name__ == '__main__':
