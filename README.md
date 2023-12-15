@@ -6,7 +6,8 @@ PharMD is a tool to retrieve pharmacophore models from MD trajectories of protei
 
 `mdtraj >= 1.9.3`  
 `pmapper >= 0.3.1`  
-`psearch >= 0.0.2`
+`psearch >= 0.0.2`  
+`rdkit` - should be installed by a user
 
 ## Installation
 ```text
