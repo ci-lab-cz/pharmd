@@ -59,7 +59,6 @@ legend = {'a': 'aromatic_centers', 'D': 'hydrogen_donor_centers', 'A': 'hydrogen
           'M': 'metal_ligands_centers'}
 reverse_legend = {Hydrophobic: 'H', PiCation: 'a', PiStack: 'a', CationPi: 'P', MetalComplex: 'M',
                   HydrogenDonor: 'D', HydrogenAcceptor: 'A', HalogenAcceptor: None, HalogenDonor: None}
-# smarts = load_smarts(load_metal_chelators=True)
 smarts = load_smarts()
 
 
